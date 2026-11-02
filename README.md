@@ -29,7 +29,7 @@ cd android && ./gradlew assembleDebug
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Or open `http://<tailscale-ip>:8085/api/builds` on the phone and download the APK. After that the app can update itself.
+Or open `http://<tailscale-ip>:8085/` in the phone browser and tap **Download APK**. After that the app can update itself.
 The default server URL is this machine's Tailscale IP (`http://100.77.132.108:8085`). You can change it in **Settings** in the app, or at build time with `-PdefaultServerUrl=...`.
 The first time you install something, Android asks you to allow "Install unknown apps" for Build Updater.
 
@@ -37,6 +37,7 @@ The first time you install something, Android asks you to allow "Install unknown
 
 | Method | Path | Description |
 |---|---|---|
+| GET | `/` | Web page listing builds with download links |
 | GET | `/api/health` | Health check |
 | GET | `/api/builds[?status=success]` | List builds, newest first |
 | POST | `/api/builds` | `{"repo_path": "/abs/path", "task": "assembleDebug", "name": "optional"}` |
