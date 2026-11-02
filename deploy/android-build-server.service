@@ -1,0 +1,12 @@
+[Unit]
+Description=Android build server (builds APKs for the Build Updater app)
+After=network-online.target
+
+[Service]
+ExecStart=%h/.local/bin/android-build-server -addr 0.0.0.0:8085
+Environment=ANDROID_HOME=%h/Android/Sdk
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
