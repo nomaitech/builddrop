@@ -106,6 +106,7 @@ type createRequest struct {
 	RepoPath string `json:"repo_path"`
 	Task     string `json:"task"`
 	Name     string `json:"name"`
+	Force    bool   `json:"force"`
 }
 
 func (s *server) createBuild(w http.ResponseWriter, r *http.Request) {
@@ -143,6 +144,11 @@ func (s *server) createBuild(w http.ResponseWriter, r *http.Request) {
 		name = filepath.Base(repo)
 	}
 	branch, commit, msg := gitInfo(repo)
+	sourceHash, dirty := sourceFingerprint(repo)
+	if req.Force {
+		// A unique hash never matches an existing build.
+		sourceHash = ""
+	}
 	build := &Build{
 		ID:        newID(),
 		Project:   name,
@@ -150,12 +156,22 @@ func (s *server) createBuild(w http.ResponseWriter, r *http.Request) {
 		Task:      task,
 		Branch:    branch,
 		Commit:    commit,
-		CommitMsg: msg,
-		Status:    StatusQueued,
-		CreatedAt: time.Now(),
+		CommitMsg:  msg,
+		Dirty:      dirty,
+		SourceHash: sourceHash,
+		Status:     StatusQueued,
+		CreatedAt:  time.Now(),
 	}
-	if err := s.store.Add(build); err != nil {
+	existing, duplicate, err := s.store.AddUnlessDuplicate(build)
+	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if duplicate {
+		writeJSON(w, http.StatusOK, struct {
+			Build
+			Duplicate bool `json:"duplicate"`
+		}{existing, true})
 		return
 	}
 	if err := s.builder.Enqueue(build.ID); err != nil {

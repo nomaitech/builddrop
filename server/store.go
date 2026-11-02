@@ -27,6 +27,8 @@ type Build struct {
 	Branch      string     `json:"branch,omitempty"`
 	Commit      string     `json:"commit,omitempty"`
 	CommitMsg   string     `json:"commit_message,omitempty"`
+	Dirty       bool       `json:"dirty,omitempty"`
+	SourceHash  string     `json:"source_hash,omitempty"`
 	Status      Status     `json:"status"`
 	Error       string     `json:"error,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
@@ -119,14 +121,32 @@ func (s *Store) Get(id string) (Build, error) {
 	return *b, nil
 }
 
-func (s *Store) Add(b *Build) error {
+// AddUnlessDuplicate adds b unless a build of the same source (repo, task and
+// source hash) is already queued, building or available. It returns the
+// existing build and true in that case. The check and insert are atomic.
+func (s *Store) AddUnlessDuplicate(b *Build) (Build, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if b.SourceHash != "" {
+		for _, existing := range s.listLocked() {
+			if existing.RepoPath != b.RepoPath || existing.Task != b.Task || existing.SourceHash != b.SourceHash {
+				continue
+			}
+			switch existing.Status {
+			case StatusQueued, StatusBuilding:
+				return existing, true, nil
+			case StatusSuccess:
+				if _, err := os.Stat(s.ApkPath(existing.ID)); err == nil {
+					return existing, true, nil
+				}
+			}
+		}
+	}
 	if err := os.MkdirAll(s.BuildDir(b.ID), 0o755); err != nil {
-		return err
+		return Build{}, false, err
 	}
 	s.builds[b.ID] = b
-	return s.save()
+	return *b, false, s.save()
 }
 
 func (s *Store) Update(id string, fn func(b *Build)) error {

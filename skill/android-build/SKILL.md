@@ -25,7 +25,10 @@ for the **Build Updater** Android app, which downloads and installs it.
    - The server URL comes from `$ANDROID_BUILD_SERVER` (default `http://localhost:8085`).
    - If `$ANDROID_BUILD_SERVER_TOKEN` is set, it's sent as a bearer token.
    - Builds can take several minutes, so run it with a long timeout (10 minutes).
-     Pass `--no-wait` as the first argument to submit and return immediately.
+     Pass `--no-wait` to submit and return immediately.
+   - If the source hasn't changed since an existing build (same commit, same uncommitted
+     changes, same task), the server reuses that build instead of building again, and the
+     script says so. Pass `--force` only if the user explicitly asks for a rebuild.
 4. Report back to the user:
    - **Success**: project, version, branch/commit, APK size, and that it's ready to install
      from the Build Updater app.
@@ -36,7 +39,7 @@ for the **Build Updater** Android app, which downloads and installs it.
 
 ## API reference
 
-- `POST /api/builds` with `{"repo_path": "/abs/path", "task": "assembleDebug", "name": "optional"}` queues a build
+- `POST /api/builds` with `{"repo_path": "/abs/path", "task": "assembleDebug", "name": "optional", "force": false}` queues a build (or returns the existing one with `"duplicate": true`)
 - `GET /api/builds` lists builds, newest first
 - `GET /api/builds/{id}` returns one build (`status`: queued | building | success | failed)
 - `GET /api/builds/{id}/log` returns the Gradle output

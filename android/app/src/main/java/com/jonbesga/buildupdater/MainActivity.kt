@@ -233,7 +233,8 @@ fun BuildCard(
                 build.createdAt?.let {
                     add(DateUtils.getRelativeTimeSpanString(it.toEpochMilli()).toString())
                 }
-                add(build.task)
+                // The default task says nothing; only show non-default ones (e.g. assembleRelease).
+                if (build.task != "assembleDebug") add(build.task)
                 if (build.apkSize > 0) add(Formatter.formatShortFileSize(context, build.apkSize))
             }
             Text(meta.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -2,7 +2,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -274,4 +277,43 @@ func gitInfo(repo string) (branch, commit, msg string) {
 		return strings.TrimSpace(string(out))
 	}
 	return run("rev-parse", "--abbrev-ref", "HEAD"), run("rev-parse", "--short", "HEAD"), run("log", "-1", "--pretty=%s")
+}
+
+// sourceFingerprint identifies the exact source being built: the HEAD commit
+// plus any uncommitted changes and untracked files under repo. It returns ""
+// when repo is not inside a git work tree, which disables de-duplication.
+func sourceFingerprint(repo string) (hash string, dirty bool) {
+	git := func(args ...string) ([]byte, error) {
+		return exec.Command("git", append([]string{"-C", repo}, args...)...).Output()
+	}
+	head, err := git("rev-parse", "HEAD")
+	if err != nil {
+		return "", false
+	}
+	h := sha256.New()
+	h.Write(head)
+
+	diff, err := git("diff", "HEAD", "--binary", "--", ".")
+	if err != nil {
+		return "", false
+	}
+	h.Write(diff)
+	dirty = len(diff) > 0
+
+	untracked, err := git("ls-files", "--others", "--exclude-standard", "-z", "--", ".")
+	if err != nil {
+		return "", false
+	}
+	for _, name := range bytes.Split(untracked, []byte{0}) {
+		if len(name) == 0 {
+			continue
+		}
+		dirty = true
+		h.Write(name)
+		if data, err := os.ReadFile(filepath.Join(repo, string(name))); err == nil {
+			sum := sha256.Sum256(data)
+			h.Write(sum[:])
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)), dirty
 }

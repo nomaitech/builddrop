@@ -28,7 +28,7 @@ var indexTmpl = template.Must(template.New("index").Funcs(template.FuncMap{
 <div class="build">
   <strong>{{.Project}}</strong>{{if .VersionName}} v{{.VersionName}} ({{.VersionCode}}){{end}}
   <div class="meta">{{.PackageName}}</div>
-  <div class="meta">{{if .Commit}}{{.Branch}} @ {{.Commit}} · {{end}}{{.CreatedAt.Format "2006-01-02 15:04"}} · {{.Task}}</div>
+  <div class="meta">{{if .Commit}}{{.Branch}} @ {{.Commit}} · {{end}}{{.CreatedAt.Format "2006-01-02 15:04"}}{{if ne .Task "assembleDebug"}} · {{.Task}}{{end}}</div>
   {{if eq .Status "success"}}<a class="dl" href="/api/builds/{{.ID}}/apk">Download APK ({{size .ApkSize}})</a>
   {{else if eq .Status "failed"}}<div class="failed">Failed: {{.Error}} (<a href="/api/builds/{{.ID}}/log">log</a>)</div>
   {{else}}<div class="meta">{{.Status}}…</div>{{end}}
