@@ -235,7 +235,7 @@ func findAapt2() string {
 	return matches[len(matches)-1]
 }
 
-var badgingRe = regexp.MustCompile(`(name|versionCode|versionName)='([^']*)'`)
+var badgingRe = regexp.MustCompile(`(?:^|\s)(name|versionCode|versionName)='([^']*)'`)
 
 // apkMetadata extracts package name and version via aapt2, best effort.
 func (b *Builder) apkMetadata(apk string) map[string]string {
