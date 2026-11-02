@@ -14,6 +14,7 @@ import kotlin.coroutines.coroutineContext
 data class Build(
     val id: String,
     val project: String,
+    val repoPath: String,
     val task: String,
     val branch: String,
     val commit: String,
@@ -34,6 +35,7 @@ data class Build(
         fun fromJson(o: JSONObject) = Build(
             id = o.getString("id"),
             project = o.optString("project"),
+            repoPath = o.optString("repo_path"),
             task = o.optString("task"),
             branch = o.optString("branch"),
             commit = o.optString("commit"),
@@ -52,6 +54,24 @@ data class Build(
             optString(key).takeIf { it.isNotEmpty() }?.let { runCatching { Instant.parse(it) }.getOrNull() }
     }
 }
+
+/** All builds of one project. [primary] is what gets shown and installed by default. */
+data class BuildGroup(
+    val key: String,
+    /** Newest successful build, or the newest build if none succeeded. */
+    val primary: Build,
+    /** A build newer than [primary] that is still running or failed. */
+    val pending: Build?,
+    val older: List<Build>,
+)
+
+/** Groups newest-first builds by project (repo path), keeping newest-first order. */
+fun List<Build>.grouped(): List<BuildGroup> =
+    groupBy { it.repoPath.ifEmpty { it.project } }.map { (key, builds) ->
+        val primary = builds.firstOrNull { it.isInstallable } ?: builds.first()
+        val pending = builds.first().takeIf { it.id != primary.id }
+        BuildGroup(key, primary, pending, builds.filter { it.id != primary.id && it.id != pending?.id })
+    }
 
 class BuildServerApi(baseUrl: String) {
     private val base = baseUrl.trim().trimEnd('/')

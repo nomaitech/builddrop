@@ -90,6 +90,11 @@ func (b *Builder) build(ctx context.Context, id string) {
 		if fi, err := os.Stat(b.store.ApkPath(id)); err == nil {
 			bd.ApkSize = fi.Size()
 		}
+		// Without an explicit name, the app's label beats the folder name
+		// (which is often just "android" or "app").
+		if bd.AutoName && meta["label"] != "" {
+			bd.Project = meta["label"]
+		}
 		bd.PackageName = meta["package"]
 		bd.VersionName = meta["versionName"]
 		bd.VersionCode = meta["versionCode"]
@@ -253,17 +258,18 @@ func (b *Builder) apkMetadata(apk string) map[string]string {
 	sc := bufio.NewScanner(strings.NewReader(string(out)))
 	for sc.Scan() {
 		line := sc.Text()
-		if !strings.HasPrefix(line, "package:") {
-			continue
-		}
-		for _, m := range badgingRe.FindAllStringSubmatch(line, -1) {
-			key := m[1]
-			if key == "name" {
-				key = "package"
+		switch {
+		case strings.HasPrefix(line, "package:"):
+			for _, m := range badgingRe.FindAllStringSubmatch(line, -1) {
+				key := m[1]
+				if key == "name" {
+					key = "package"
+				}
+				meta[key] = m[2]
 			}
-			meta[key] = m[2]
+		case strings.HasPrefix(line, "application-label:"):
+			meta["label"] = strings.Trim(strings.TrimPrefix(line, "application-label:"), "'")
 		}
-		break
 	}
 	return meta
 }

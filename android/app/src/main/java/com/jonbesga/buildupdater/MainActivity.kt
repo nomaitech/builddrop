@@ -34,6 +34,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -176,15 +177,15 @@ fun BuildsScreen(state: UiState, vm: MainViewModel, onOpenSettings: () -> Unit) 
                         )
                     }
                 }
-                items(state.builds, key = { it.id }) { build ->
-                    BuildCard(
-                        build = build,
-                        install = state.installs[build.id],
-                        onInstall = {
+                items(state.builds.grouped(), key = { it.key }) { group ->
+                    BuildGroupCard(
+                        group = group,
+                        installs = state.installs,
+                        onInstall = { build ->
                             if (state.needsInstallPermission) permissionDialog = true else vm.install(build)
                         },
-                        onCancel = { vm.cancelDownload(build) },
-                        onDismiss = { vm.clearInstall(build.id) },
+                        onCancel = vm::cancelDownload,
+                        onDismiss = { vm.clearInstall(it.id) },
                     )
                 }
             }
@@ -193,59 +194,124 @@ fun BuildsScreen(state: UiState, vm: MainViewModel, onOpenSettings: () -> Unit) 
 }
 
 @Composable
-fun BuildCard(
+fun BuildGroupCard(
+    group: BuildGroup,
+    installs: Map<String, InstallState>,
+    onInstall: (Build) -> Unit,
+    onCancel: (Build) -> Unit,
+    onDismiss: (Build) -> Unit,
+) {
+    var expanded by rememberSaveable(group.key) { mutableStateOf(false) }
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            group.pending?.let { PendingBuild(it) }
+            BuildDetails(
+                build = group.primary,
+                install = installs[group.primary.id],
+                onInstall = { onInstall(group.primary) },
+                onCancel = { onCancel(group.primary) },
+                onDismiss = { onDismiss(group.primary) },
+            )
+            if (group.older.isNotEmpty()) {
+                TextButton(onClick = { expanded = !expanded }) {
+                    val n = group.older.size
+                    Text(if (expanded) "Hide older builds" else "Show $n older build${if (n > 1) "s" else ""}")
+                }
+                if (expanded) {
+                    group.older.forEach { build ->
+                        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                        BuildDetails(
+                            build = build,
+                            install = installs[build.id],
+                            onInstall = { onInstall(build) },
+                            onCancel = { onCancel(build) },
+                            onDismiss = { onDismiss(build) },
+                            showProject = false,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** One-line status of a newer build that isn't installable (yet). */
+@Composable
+fun PendingBuild(build: Build) {
+    Column(Modifier.padding(bottom = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StatusChip(build.status)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                buildString {
+                    append("Newer build")
+                    if (build.commit.isNotEmpty()) append(" · ${build.commit}")
+                },
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        if (build.status == "failed" && build.error.isNotEmpty()) {
+            Text(build.error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        }
+        HorizontalDivider(Modifier.padding(top = 8.dp))
+    }
+}
+
+@Composable
+fun BuildDetails(
     build: Build,
     install: InstallState?,
     onInstall: () -> Unit,
     onCancel: () -> Unit,
     onDismiss: () -> Unit,
+    showProject: Boolean = true,
 ) {
     val context = LocalContext.current
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                if (showProject) {
                     Text(build.project, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    if (build.versionName.isNotEmpty()) {
-                        Text(
-                            "v${build.versionName} (${build.versionCode})",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
                 }
-                StatusChip(build.status)
-            }
-            if (build.packageName.isNotEmpty()) {
-                Text(build.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (build.commit.isNotEmpty()) {
-                Spacer(Modifier.padding(2.dp))
-                Text(
-                    "${build.branch} @ ${build.commit}",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = FontFamily.Monospace,
-                )
-                if (build.commitMessage.isNotEmpty()) {
-                    Text(build.commitMessage, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (build.versionName.isNotEmpty()) {
+                    Text(
+                        "v${build.versionName} (${build.versionCode})",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
             }
-            val meta = buildList {
-                build.createdAt?.let {
-                    add(DateUtils.getRelativeTimeSpanString(it.toEpochMilli()).toString())
-                }
-                // The default task says nothing; only show non-default ones (e.g. assembleRelease).
-                if (build.task != "assembleDebug") add(build.task)
-                if (build.apkSize > 0) add(Formatter.formatShortFileSize(context, build.apkSize))
+            StatusChip(build.status)
+        }
+        if (build.packageName.isNotEmpty()) {
+            Text(build.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (build.commit.isNotEmpty()) {
+            Spacer(Modifier.padding(2.dp))
+            Text(
+                "${build.branch} @ ${build.commit}",
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+            )
+            if (build.commitMessage.isNotEmpty()) {
+                Text(build.commitMessage, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Text(meta.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (build.status == "failed" && build.error.isNotEmpty()) {
-                Text(build.error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        }
+        val meta = buildList {
+            build.createdAt?.let {
+                add(DateUtils.getRelativeTimeSpanString(it.toEpochMilli()).toString())
             }
+            // The default task says nothing; only show non-default ones (e.g. assembleRelease).
+            if (build.task != "assembleDebug") add(build.task)
+            if (build.apkSize > 0) add(Formatter.formatShortFileSize(context, build.apkSize))
+        }
+        Text(meta.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (build.status == "failed" && build.error.isNotEmpty()) {
+            Text(build.error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        }
 
-            if (build.isInstallable) {
-                Spacer(Modifier.padding(4.dp))
-                InstallControls(install, onInstall, onCancel, onDismiss)
-            }
+        if (build.isInstallable) {
+            Spacer(Modifier.padding(4.dp))
+            InstallControls(install, onInstall, onCancel, onDismiss)
         }
     }
 }

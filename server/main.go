@@ -150,12 +150,13 @@ func (s *server) createBuild(w http.ResponseWriter, r *http.Request) {
 		sourceHash = ""
 	}
 	build := &Build{
-		ID:        newID(),
-		Project:   name,
-		RepoPath:  repo,
-		Task:      task,
-		Branch:    branch,
-		Commit:    commit,
+		ID:         newID(),
+		Project:    name,
+		AutoName:   req.Name == "",
+		RepoPath:   repo,
+		Task:       task,
+		Branch:     branch,
+		Commit:     commit,
 		CommitMsg:  msg,
 		Dirty:      dirty,
 		SourceHash: sourceHash,

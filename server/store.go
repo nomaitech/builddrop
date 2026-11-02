@@ -22,6 +22,7 @@ const (
 type Build struct {
 	ID          string     `json:"id"`
 	Project     string     `json:"project"`
+	AutoName    bool       `json:"auto_name,omitempty"` // Project defaulted to the folder name
 	RepoPath    string     `json:"repo_path"`
 	Task        string     `json:"task"`
 	Branch      string     `json:"branch,omitempty"`
