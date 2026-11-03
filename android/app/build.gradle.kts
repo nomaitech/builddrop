@@ -8,10 +8,11 @@ plugins {
 val defaultServerUrl = (findProperty("defaultServerUrl") as String?) ?: "http://100.77.132.108:8085"
 
 android {
-    namespace = "com.jonbesga.buildupdater"
+    namespace = "com.jonbesga.builddrop"
     compileSdk = 37
 
     defaultConfig {
+        // Keep the installed app identity so existing users receive updates.
         applicationId = "com.jonbesga.buildupdater"
         minSdk = 26
         targetSdk = 37

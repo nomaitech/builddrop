@@ -29,7 +29,7 @@ json() { python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get(sys.ar
 
 if ! curl -fsS "$SERVER/api/health" >/dev/null 2>&1; then
   echo "ERROR: build server not reachable at $SERVER" >&2
-  echo "Start it with: systemctl --user start android-build-server" >&2
+  echo "Start it with: systemctl --user start builddrop-server" >&2
   exit 2
 fi
 

@@ -1,13 +1,13 @@
 ---
 name: android-build
-description: Build an Android app on the local build server so it can be downloaded and installed from the Build Updater phone app. Use when the user asks to "build the APK", "send a build to my phone", "publish/push a build", "make a new build available", or invokes /android-build in an Android (Gradle) project.
+description: Build an Android app on the local build server so it can be downloaded and installed from the BuildDrop phone app. Use when the user asks to "build the APK", "send a build to my phone", "publish/push a build", "make a new build available", or invokes /android-build in an Android (Gradle) project.
 ---
 
-# Android Build
+# BuildDrop Android Build
 
 Sends the current Android project's location to the local build server
-(Go server in `android-build-updater`). The server runs Gradle, stores the APK and lists it
-for the **Build Updater** Android app, which downloads and installs it.
+(Go server in `builddrop`). The server runs Gradle, stores the APK and lists it
+for the **BuildDrop** Android app, which downloads and installs it.
 
 ## Steps
 
@@ -19,8 +19,11 @@ for the **Build Updater** Android app, which downloads and installs it.
 3. Run the helper script. It submits the build and waits until it finishes:
 
    ```bash
-   ~/.claude/skills/android-build/scripts/submit-build.sh <project-root> [task] [display-name]
+   bash <skill-directory>/scripts/submit-build.sh [--no-wait] [--force] <project-root> [task] [display-name]
    ```
+
+   Resolve `<skill-directory>` to the directory containing this `SKILL.md`; the helper
+   is bundled alongside it, independent of which agent installed the skill.
 
    - The server URL comes from `$ANDROID_BUILD_SERVER` (default `http://localhost:8085`).
    - If `$ANDROID_BUILD_SERVER_TOKEN` is set, it's sent as a bearer token.
@@ -31,11 +34,11 @@ for the **Build Updater** Android app, which downloads and installs it.
      script says so. Pass `--force` only if the user explicitly asks for a rebuild.
 4. Report back to the user:
    - **Success**: project, version, branch/commit, APK size, and that it's ready to install
-     from the Build Updater app.
+     from the BuildDrop app.
    - **Failure**: the script prints the tail of the Gradle log. Summarise the error. If it's a
      code problem in the current project, offer to fix it and rebuild.
    - **Server unreachable**: tell the user to start the server
-     (`systemctl --user start android-build-server`).
+     (`systemctl --user start builddrop-server`).
 
 ## API reference
 

@@ -13,7 +13,7 @@ var indexTmpl = template.Must(template.New("index").Funcs(template.FuncMap{
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Android builds</title>
+<title>BuildDrop</title>
 <style>
   body { font-family: system-ui, sans-serif; margin: 0 auto; max-width: 40rem; padding: 1rem; }
   .build { border: 1px solid #ccc; border-radius: 8px; padding: .75rem 1rem; margin-bottom: .75rem; }
@@ -25,7 +25,7 @@ var indexTmpl = template.Must(template.New("index").Funcs(template.FuncMap{
 </style>
 </head>
 <body>
-<h1>Android builds</h1>
+<h1>BuildDrop</h1>
 {{range .}}
 <div class="build">
   {{with .Pending}}<div class="meta {{if eq .Status "failed"}}failed{{end}}">Newer build {{.Status}}{{if .Commit}} ({{.Commit}}){{end}}{{if .Error}}: {{.Error}} (<a href="/api/builds/{{.ID}}/log">log</a>){{end}}</div>{{end}}

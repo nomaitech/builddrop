@@ -1,4 +1,4 @@
-package com.jonbesga.buildupdater
+package com.jonbesga.builddrop
 
 import android.app.PendingIntent
 import android.content.BroadcastReceiver

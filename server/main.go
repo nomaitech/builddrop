@@ -27,7 +27,7 @@ type server struct {
 func main() {
 	home, _ := os.UserHomeDir()
 	addr := flag.String("addr", envOr("BUILD_SERVER_ADDR", "0.0.0.0:8085"), "listen address")
-	dataDir := flag.String("data", envOr("BUILD_SERVER_DATA", filepath.Join(home, ".local", "share", "android-build-server")), "data directory")
+	dataDir := flag.String("data", envOr("BUILD_SERVER_DATA", filepath.Join(home, ".local", "share", "builddrop-server")), "data directory")
 	token := flag.String("token", os.Getenv("BUILD_SERVER_TOKEN"), "optional token required to create/delete builds")
 	timeout := flag.Duration("timeout", 30*time.Minute, "max duration of a single build")
 	flag.Parse()
@@ -57,7 +57,7 @@ func main() {
 		httpSrv.Shutdown(shutdownCtx)
 	}()
 
-	log.Printf("android build server listening on %s (data: %s)", *addr, *dataDir)
+	log.Printf("BuildDrop server listening on %s (data: %s)", *addr, *dataDir)
 	if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
 	}

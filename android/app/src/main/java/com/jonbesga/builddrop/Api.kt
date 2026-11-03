@@ -1,4 +1,4 @@
-package com.jonbesga.buildupdater
+package com.jonbesga.builddrop
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive

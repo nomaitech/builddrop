@@ -1,4 +1,4 @@
-package com.jonbesga.buildupdater
+package com.jonbesga.builddrop
 
 import android.content.Intent
 import android.net.Uri
@@ -113,7 +113,7 @@ fun BuildsScreen(state: UiState, vm: MainViewModel, onOpenSettings: () -> Unit) 
         AlertDialog(
             onDismissRequest = { permissionDialog = false },
             title = { Text("Allow installs") },
-            text = { Text("To install builds, allow Build Updater to install unknown apps.") },
+            text = { Text("To install builds, allow BuildDrop to install unknown apps.") },
             confirmButton = {
                 TextButton(onClick = {
                     permissionDialog = false
@@ -131,7 +131,7 @@ fun BuildsScreen(state: UiState, vm: MainViewModel, onOpenSettings: () -> Unit) 
             TopAppBar(
                 title = {
                     Column {
-                        Text("Builds")
+                        Text("BuildDrop")
                         Text(
                             state.serverUrl,
                             style = MaterialTheme.typography.labelSmall,

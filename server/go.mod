@@ -1,3 +1,3 @@
-module github.com/jonbesga/android-build-updater/server
+module github.com/nomaitech/builddrop/server
 
 go 1.27.3
