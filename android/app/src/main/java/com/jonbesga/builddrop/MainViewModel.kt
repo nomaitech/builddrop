@@ -63,7 +63,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             if (!silent) _state.update { it.copy(loading = true) }
             try {
-                val builds = BuildServerApi(_state.value.serverUrl).listBuilds()
+                val server = _state.value.serverUrl
+                val builds = BuildServerApi(server).listBuilds()
+                if (server != _state.value.serverUrl) return@launch
+                BuildNotifications.record(getApplication(), server, builds)
                 _state.update { it.copy(builds = builds, loading = false, error = null) }
             } catch (e: CancellationException) {
                 throw e

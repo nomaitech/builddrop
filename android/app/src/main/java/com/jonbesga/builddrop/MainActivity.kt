@@ -1,5 +1,9 @@
 package com.jonbesga.builddrop
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build as AndroidBuild
+import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -69,8 +73,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity() {
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        BuildNotifications.schedule(this)
+        if (AndroidBuild.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED &&
+            !getPreferences(MODE_PRIVATE).getBoolean("notification_permission_requested", false)
+        ) {
+            getPreferences(MODE_PRIVATE).edit().putBoolean("notification_permission_requested", true).apply()
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
         enableEdgeToEdge()
         setContent {
             MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
@@ -88,6 +102,7 @@ fun App(vm: MainViewModel = viewModel()) {
     // Re-check the "install unknown apps" permission when returning from system settings.
     LifecycleResumeEffect(Unit) {
         vm.checkInstallPermission()
+        vm.refresh(silent = true)
         onPauseOrDispose {}
     }
 
@@ -377,6 +392,7 @@ fun StatusChip(status: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(currentUrl: String, onSave: (String) -> Unit, onReset: () -> Unit, onBack: () -> Unit) {
+    val context = LocalContext.current
     var url by rememberSaveable { mutableStateOf(currentUrl) }
     val valid = url.trim().let { it.startsWith("http://") || it.startsWith("https://") }
     Scaffold(
@@ -400,6 +416,11 @@ fun SettingsScreen(currentUrl: String, onSave: (String) -> Unit, onReset: () -> 
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 modifier = Modifier.fillMaxWidth(),
             )
+            Text("Checks for new builds in the background about every 10 minutes. Android may delay checks to save battery.")
+            TextButton(onClick = {
+                context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
+            }) { Text("Notification settings") }
             Row {
                 Button(onClick = { onSave(url) }, enabled = valid) { Text("Save") }
                 Spacer(Modifier.width(8.dp))

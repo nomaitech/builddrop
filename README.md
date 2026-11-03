@@ -120,3 +120,9 @@ bash -n install.sh skill/android-build/scripts/submit-build.sh
 Run `./install.sh` to stop and disable the old `android-build-server` service, install `builddrop-server`, and move existing build history to `~/.local/share/builddrop-server` when that directory does not already exist. Copy custom service overrides to the new service before upgrading; custom data locations need an explicit configuration override.
 
 The Android application ID remains `com.jonbesga.buildupdater`, so BuildDrop can update existing installations and retain their settings. The `android-build` skill name and environment variable names remain compatible.
+
+### Build notifications
+
+BuildDrop requests notification permission on first launch and checks for ready builds in the background, targeting 10 minutes after each check. Android may delay checks during idle or battery saving; the build server (and Tailscale, if used) must be reachable. Jobs persist across reboots once the app has been opened. Force-stopping the app pauses checks until it is reopened.
+
+The first successful check of each server establishes a baseline without notifying about existing builds. Later successful builds trigger one notification each, including builds that were previously queued or building. Tap a notification to open the build list. You can manage notification permission from BuildDrop’s Settings screen.
